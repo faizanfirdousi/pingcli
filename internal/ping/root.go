@@ -1,8 +1,8 @@
 package ping
 
 import (
-	"fmt"
-	"os"
+	//"fmt"
+	//"os"
 
 	"github.com/spf13/cobra"
 )
