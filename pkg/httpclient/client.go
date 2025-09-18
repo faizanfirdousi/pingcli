@@ -1,3 +1,7 @@
+//This file defines a small package httpclient that wraps net/http to
+// provide a configurable HTTP client and a Get(ctx, url) method that
+// measures request time and returns a compact Response struct.
+
 package httpclient
 
 import (
@@ -9,15 +13,16 @@ import (
 
 // Client interface for HTTP operations (enables mocking)
 type Client interface {
+	//Method Signature
 	Get(ctx context.Context, url string) (*Response, error)
 }
 
 //Response Wraps HTTP response with timing data
 
 type Response struct {
-	StatusCode int
-	Status string
-	Duration time.Duration
+	StatusCode    int
+	Status        string
+	Duration      time.Duration
 	ContentLength int64
 }
 
@@ -29,10 +34,10 @@ type HTTPClient struct {
 
 //Config for HTTP client setup
 type Config struct {
-	Timeout time.Duration
+	Timeout         time.Duration
 	FollowRedirects bool
-	MaxRedirects int
-	UserAgent string
+	MaxRedirects    int
+	UserAgent       string
 }
 
 //NewHTTPClient creates a new HTTP cleint with configuration
@@ -70,6 +75,37 @@ func NewHTTPClient(config Config) *HTTPClient{
 
 //Get performs HTTP GET request with timing
 
-// func(c *HTTPClient) Get(ctx context.Context, url string) (*Response, error){
-// 	//Validate URl
-// }
+func (c *HTTPClient) Get(ctx context.Context, url string) (*Response, error){
+	//Validate URL
+	if url == "" {
+		return nil, fmt.Errorf("URL cannot be empty")
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w",err)
+	}
+
+	//Set headers
+	req.Header.Set("User-Agent", "PingCLI/1.0")
+	req.Header.Set("Accept","*/*")
+
+	start := time.Now()
+	resp, err := c.client.Do(req)
+	duration := time.Since(start)
+
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w",err)
+	}
+
+	defer resp.Body.Close()
+
+	return &Response{
+		StatusCode: resp.StatusCode,
+		Status: resp.Status,
+		Duration: duration,
+		ContentLength: resp.ContentLength,
+	}, nil
+
+
+}
